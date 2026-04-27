@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+
+<h1>Chat</h1>
+
+<input id="msg">
+<button onclick="send()">Envoyer</button>
+
+<ul id="messages"></ul>
+
+<script>
+var socket = io();
+
+function send() {
+    var m = document.getElementById("msg").value;
+    socket.send("{{ username }}: " + m);
+}
+
+socket.on('message', function(msg) {
+    var li = document.createElement("li");
+    li.innerText = msg;
+    document.getElementById("messages").appendChild(li);
+});
+</script>
+
+<a href="/">Retour</a>
+
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ajouter une recette</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            margin: 0;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .btn {
+            background: #ff6b6b;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background: #ff4c4c;
+        }
+
+        .back {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            text-decoration: none;
+            color: #555;
+        }
+
+        .back:hover {
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    ➕ Ajouter une recette
+</div>
+
+<div class="container">
+
+<form method="POST" enctype="multipart/form-data">
+
+    <label>🍽 Titre</label>
+    <input type="text" name="title" required>
+
+    <!-- ✅ AJOUT CATÉGORIE -->
+    <label>📂 Catégorie</label>
+    <select name="categorie">
+        <option>Entrée</option>
+        <option>Plat</option>
+        <option>Dessert</option>
+    </select>
+
+    <label>📁 Sous-catégorie</label>
+    <select name="sous_categorie">
+        <option>Froide</option>
+        <option>Chaude</option>
+        <option>Viande</option>
+        <option>Poisson</option>
+        <option>Autre</option>
+    </select>
+
+    <label>🧂 Ingrédients</label>
+    <textarea name="ingredients" required></textarea>
+
+    <label>👨‍🍳 Préparation</label>
+    <textarea name="preparation" required></textarea>
+
+    <label>🔥 Cuisson</label>
+    <input type="text" name="cuisson">
+
+    <label>💡 Astuce</label>
+    <input type="text" name="astuce">
+
+    <label>📸 Image</label>
+    <input type="file" name="image">
+
+    <button type="submit">💾 Ajouter la recette</button>
+
+</form>
+
+<a href="/" class="back">⬅ Retour</a>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+
+    <style>
+        body { font-family: Arial; background:#f4f6f9; padding:20px; }
+
+        h1 { color:#ff6b6b; }
+
+        .section {
+            background:white;
+            padding:15px;
+            margin-bottom:20px;
+            border-radius:10px;
+        }
+
+        .user {
+            margin-bottom:8px;
+        }
+
+        .btn {
+            padding:5px 10px;
+            border-radius:5px;
+            color:white;
+            text-decoration:none;
+            margin-left:5px;
+        }
+
+        .ok { background:green; }
+        .no { background:red; }
+        .delete { background:black; }
+    </style>
+</head>
+
+<body>
+
+<h1>👑 Panel Admin</h1>
+
+<a href="/">⬅ Retour</a>
+
+<!-- EN ATTENTE -->
+<div class="section">
+    <h2>🟡 En attente</h2>
+
+    {% for user in non_autorises %}
+        <div class="user">
+            {{ user }}
+            <a href="/admin/autoriser/{{ user }}" class="btn ok">✔ Autoriser</a>
+            <a href="/admin/delete_user/{{ user }}" class="btn delete">🗑 Supprimer</a>
+        </div>
+    {% else %}
+        <p>Aucun utilisateur en attente</p>
+    {% endfor %}
+</div>
+
+<!-- AUTORISÉS -->
+<div class="section">
+    <h2>🟢 Autorisés</h2>
+
+    {% for user in autorises %}
+        <div class="user">
+            {{ user }}
+            <a href="/admin/refuser/{{ user }}" class="btn no">⛔ Refuser</a>
+            <a href="/admin/delete_user/{{ user }}" class="btn delete">🗑 Supprimer</a>
+        </div>
+    {% else %}
+        <p>Aucun utilisateur</p>
+    {% endfor %}
+</div>
+</body>
+
+<!-- 🔔 SCRIPT NOTIFICATION -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+
+<script>
+    var socket = io();
+
+    socket.on('new_user', function(username) {
+        alert("🔔 Nouvel utilisateur : " + username);
+    });
+</script>
+
+</body>
+</html>

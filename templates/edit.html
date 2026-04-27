@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modifier recette</title>
+</head>
+<body>
+
+<h1>✏️ Modifier recette</h1>
+
+<form method="POST">
+    <input name="title" value="{{ recipe.title }}" placeholder="Titre"><br><br>
+
+    <textarea name="ingredients">{{ recipe.ingredients }}</textarea><br><br>
+
+    <textarea name="preparation">{{ recipe.preparation }}</textarea><br><br>
+
+    <input name="cuisson" value="{{ recipe.cuisson }}"><br><br>
+
+    <input name="astuce" value="{{ recipe.astuce }}"><br><br>
+
+    <button type="submit">💾 Sauvegarder</button>
+</form>
+
+<a href="/">⬅ Retour</a>
+
+</body>
+</html>

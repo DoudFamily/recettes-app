@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Recettes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+       .menu {
+    margin: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 12px;
+}
+
+.search input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+.filters {
+    margin-top: 10px;
+}
+
+.filter {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 5px;
+    background: #eee;
+    border-radius: 20px;
+    text-decoration: none;
+    color: black;
+    transition: 0.2s;
+}
+
+.filter:hover {
+    background: #ff6b6b;
+    color: white;
+}
+
+.active {
+    background: #ff6b6b;
+    color: white;
+}
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: #2c3e50;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+        .navbar a:hover {
+            opacity: 0.8;
+        }
+
+        /* GRID */
+        .container {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* CARD */
+        .card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .card-content {
+            padding: 15px;
+        }
+
+        .card h2 {
+            margin: 0;
+            color: #ff6b6b;
+        }
+
+        .info {
+            font-size: 14px;
+            margin-top: 8px;
+            color: #555;
+        }
+
+        .empty {
+            text-align: center;
+            grid-column: 1/-1;
+            font-size: 18px;
+            color: gray;
+        }
+
+        .btn {
+            background: #ff6b6b;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: white;
+            text-decoration: none;
+        }
+/* 📱 TABLETTE / MOBILE */
+@media (max-width: 768px) {
+
+    .header {
+        font-size: 22px;
+        padding: 15px;
+    }
+
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .container {
+        grid-template-columns: 1fr;
+    }
+
+    .menu {
+        margin: 10px;
+        padding: 10px;
+    }
+
+    .filter {
+        margin: 3px;
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+
+    .card img {
+        height: 180px;
+    }
+}
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    🍲 Les Ptis Plats de DOUD
+</div>
+
+<div class="navbar">
+    <div>
+        {% if username %}
+            👤 {{ username }}
+        {% else %}
+            Non connecté
+        {% endif %}
+    </div>
+
+    <div>
+        {% if username %}
+            <a href="/add" class="btn">➕ Ajouter</a>
+            <a href="/chat" class="btn">💬 Chat</a>
+            <a href="/logout" class="btn">🚪 Logout</a>
+        {% else %}
+            <a href="/login" class="btn">🔐 Login</a>
+        {% endif %}
+
+{% if role == "admin" %}
+    <a href="/admin" class="btn">👑 Admin</a>
+{% endif %}
+    </div>
+
+</div> <!-- fin navbar -->
+<div class="menu">
+
+    <!-- 🔍 RECHERCHE -->
+    <form method="GET" class="search">
+        <input type="text" name="search" placeholder="🔍 Rechercher une recette..." value="{{ search or '' }}">
+    </form>
+
+    <!-- 📂 CATÉGORIES -->
+    <div class="filters">
+        <a href="/" class="filter {% if not cat %}active{% endif %}">Tous</a>
+        <a href="/?cat=Entrée" class="filter {% if cat=='Entrée' %}active{% endif %}">Entrées</a>
+        <a href="/?cat=Plat" class="filter {% if cat=='Plat' %}active{% endif %}">Plats</a>
+        <a href="/?cat=Dessert" class="filter {% if cat=='Dessert' %}active{% endif %}">Desserts</a>
+    </div>
+
+    <!-- 🌳 SOUS CATÉGORIES -->
+    {% if cat == "Entrée" %}
+    <div class="filters">
+        <a href="/?cat=Entrée&sub=Froide" class="filter">🥗 Froide</a>
+        <a href="/?cat=Entrée&sub=Chaude" class="filter">🔥 Chaude</a>
+    </div>
+    {% endif %}
+
+    {% if cat == "Plat" %}
+    <div class="filters">
+        <a href="/?cat=Plat&sub=Viande" class="filter">🥩 Viande</a>
+        <a href="/?cat=Plat&sub=Poisson" class="filter">🐟 Poisson</a>
+    </div>
+    {% endif %}
+
+</div>
+
+<div class="container">
+
+{% if recipes %}
+    {% for recipe in recipes %}
+        <div class="card">
+
+    {% if recipe.image %}
+        <img src="{{ url_for('static', filename='images/' + recipe.image) }}">
+    {% else %}
+        <img src="https://via.placeholder.com/400x200?text=Recette">
+    {% endif %}
+
+    <div class="card-content">
+        <h2>{{ recipe.title }}</h2>
+
+        <p class="info"><strong>🧂 Ingrédients :</strong><br>{{ recipe.ingredients }}</p>
+        <p class="info"><strong>👨‍🍳 Préparation :</strong><br>{{ recipe.preparation }}</p>
+        <p class="info"><strong>🔥 Cuisson :</strong> {{ recipe.cuisson }}</p>
+        <p class="info"><strong>💡 Astuce :</strong> {{ recipe.astuce }}</p>
+
+        {% if role == "admin" %}
+    <a href="/edit/{{ loop.index0 }}">✏️ Modifier</a>
+    <a href="/delete/{{ loop.index0 }}">🗑 Supprimer</a>
+{% endif %}
+    </div>
+
+</div>
+    {% endfor %}
+{% else %}
+    <p class="empty">Aucune recette pour le moment 😢</p>
+{% endif %}
+
+</div>
+
+</body>
+</html>

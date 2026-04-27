@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <h1>Connexion</h1>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+
+    {% if new_user %}
+        <p>Nouvel utilisateur : <strong>{{ new_user }}</strong></p>
+        <p>Autoriser cet utilisateur ?</p>
+        <form method="post">
+            <input type="hidden" name="username" value="{{ new_user }}">
+            <button type="submit" name="action" value="autoriser">Oui</button>
+            <button type="submit" name="action" value="refuser">Non</button>
+        </form>
+    {% else %}
+        <form method="post">
+            <p>Nom d'utilisateur: <input type="text" name="username" required></p>
+            <button type="submit">Se connecter</button>
+        </form>
+    {% endif %}
+
+</body>
+</html>
