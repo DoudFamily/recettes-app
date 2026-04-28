@@ -19,10 +19,32 @@
             <button type="submit" name="action" value="refuser">Non</button>
         </form>
     {% else %}
-        <form method="post">
-            <p>Nom d'utilisateur: <input type="text" name="username" required></p>
-            <button type="submit">Se connecter</button>
-        </form>
+       <form method="post">
+    <p>Nom d'utilisateur:</p>
+    <input type="text" name="username" id="username" placeholder="Ex: admin ou prénom" required oninput="checkAdmin()">
+
+    <!-- 🔐 Champ caché au départ -->
+    <div id="passwordField" style="display:none;">
+        <p>Mot de passe:</p>
+       <input type="password" name="password" placeholder="Mot de passe admin">
+    </div>
+
+    <br>
+    <button type="submit">Se connecter</button>
+</form>
+
+<script>
+function checkAdmin() {
+    var username = document.getElementById("username").value;
+    var passwordField = document.getElementById("passwordField");
+
+    if (username === "admin") {
+        passwordField.style.display = "block";
+    } else {
+        passwordField.style.display = "none";
+    }
+}
+</script>
     {% endif %}
 
 </body>

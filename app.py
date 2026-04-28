@@ -1,7 +1,13 @@
 from flask import Flask, render_template, request, redirect, session
 from flask_socketio import SocketIO, send
 from werkzeug.utils import secure_filename
-import json, os
+from dotenv import load_dotenv
+import os
+import json
+
+load_dotenv()
+
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -40,23 +46,28 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
 
-        # ADMIN
+        # 🔐 ADMIN AVEC MOT DE PASSE
         if username == "admin":
-            session['username'] = username
-            session['role'] = "admin"
-            return redirect('/')
+            password = request.form.get('password')
 
-        # USER autorisé
+            if password == ADMIN_PASSWORD:
+                session['username'] = username
+                session['role'] = "admin"
+                return redirect('/')
+            else:
+                error = "Mot de passe admin incorrect"
+
+        # 👤 USER autorisé
         elif username in autorises:
             session['username'] = username
             session['role'] = "user"
             return redirect('/')
 
-        # USER refusé
+        # ❌ USER refusé
         elif username in non_autorises:
             error = "Accès refusé"
 
-        # NOUVEL UTILISATEUR
+        # 🆕 NOUVEL UTILISATEUR
         else:
             if username not in non_autorises:
                 non_autorises.append(username)
@@ -64,7 +75,6 @@ def login():
                 with open(NON_AUTORISES_FILE, "w", encoding="utf-8") as f:
                     json.dump(non_autorises, f, indent=4)
 
-                # 🔔 notification admin
                 socketio.emit('new_user', username)
 
             error = "⏳ En attente de validation par admin"
