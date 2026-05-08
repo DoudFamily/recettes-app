@@ -8,6 +8,7 @@ import json
 load_dotenv()
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+print("ADMIN =", ADMIN_PASSWORD)
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -333,5 +334,6 @@ def toggle_favori(id):
 
 #--------------------RUN------------------------------
 
-if __name__ == '__main__':
-    socketio.run(app, host="0.0.0.0", port=5000)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port)

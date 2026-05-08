@@ -8,5 +8,15 @@
         "image": "",
         "categorie": "Dessert",
         "sous_categorie": "Froide"
+    },
+    {
+        "title": "Saucisse de toulouse",
+        "ingredients": "Viande de porc maigre (jambon ou \u00e9paules)\r\nGorge de porc 20% du poid de la viande maigre\r\nBoyaux de porc\r\nSel 14 Grs / kg\r\nSel nitrit\u00e8 3 Grs / kg\r\nPoivre noir ou gris 3 \u00e0 5 Grs par kg\r\n\u00c9pic\u00e9 au choix remplace le poivre \r\nCurry 10grs / kg\r\nAnis 10 Grs / kg",
+        "preparation": "Coupez viande et gorge en morceaux pour passer au hachoir\r\nHachez la viande et la gorge en alternant les morceaux grille 8 a 10\r\nAjouter sel et sel nitrit\u00e8 puis le poivre ou les epices\r\nMalanger en ajouter 15 cl d'eau par kilo\r\nLaisser reposer filmer au contact 2h minimum au frais \r\nEmbosser \r\nLaisser reposer au frais et couvert pour \u00e9viter que la saucisse seche",
+        "cuisson": "",
+        "astuce": "Pour former les saucisses ne trop tasser pour pincer le boyau puis faites plusieurs tours ",
+        "image": "",
+        "categorie": "Plat",
+        "sous_categorie": "Chaude"
     }
 ]
