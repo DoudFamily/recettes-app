@@ -13,7 +13,15 @@ print("ADMIN =", ADMIN_PASSWORD)
 app = Flask(__name__)
 app.secret_key = "secret123"
 socketio = SocketIO(app)
-
+@app.before_request
+def verifier_acces():
+    """Déconnecte automatiquement un user si l'admin l'a révoqué"""
+    if 'username' in session and session.get('role') != 'admin':
+        with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
+            autorises = json.load(f)
+        if session['username'] not in autorises:
+            session.clear()
+            return redirect('/login')
 RECIPES_FILE = "recettes.json"
 AUTORISES_FILE = "autorises.json"
 NON_AUTORISES_FILE = "non_autorises.json"
@@ -93,20 +101,22 @@ def validate_user():
         non_autorises = json.load(f)
 
     if action == "autoriser":
-        autorises.append(username)
+        if username not in autorises:
+            autorises.append(username)
+        if username in non_autorises:
+            non_autorises.remove(username)  # ← retire aussi des non autorisés
         with open(AUTORISES_FILE, "w", encoding="utf-8") as f:
             json.dump(autorises, f, indent=4)
-
-        session['username'] = username
-        session['role'] = "user"
-
-    else:
-        non_autorises.append(username)
         with open(NON_AUTORISES_FILE, "w", encoding="utf-8") as f:
             json.dump(non_autorises, f, indent=4)
 
-    return redirect('/')
+    else:  # refuser
+        if username not in non_autorises:
+            non_autorises.append(username)
+        with open(NON_AUTORISES_FILE, "w", encoding="utf-8") as f:
+            json.dump(non_autorises, f, indent=4)
 
+    return redirect('/admin')  # ← reste sur l'admin, pas redirect('/')
 # ---------------- ACCUEIL ----------------
 @app.route('/')
 def index():
