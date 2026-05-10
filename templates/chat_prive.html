@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat avec {{ destinataire }}</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body>
+    <h2>💬 Conversation avec {{ destinataire }}</h2>
+
+    <div id="messages" style="border:1px solid #ccc; height:300px; overflow-y:auto; padding:10px; margin-bottom:10px;">
+        {% for msg in historique %}
+            <p><strong>{{ msg.from }}</strong> : {{ msg.text }}</p>
+        {% endfor %}
+    </div>
+
+    <input id="msg" type="text" placeholder="Votre message..." style="width:70%">
+    <button onclick="envoyer()">Envoyer</button>
+
+    <br><br>
+    <a href="/chat">← Retour à la liste</a>
+
+    <script>
+        const socket = io();
+        const room = "{{ room }}";
+        const username = "{{ username }}";
+
+        socket.emit('join', { room: room });
+
+        socket.on('message_prive', function(data) {
+            const div = document.getElementById('messages');
+            const p = document.createElement('p');
+            p.innerHTML = '<strong>' + data.from + '</strong> : ' + data.text;
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight;
+        });
+
+        function envoyer() {
+            const input = document.getElementById('msg');
+            if (input.value.trim() === '') return;
+            socket.emit('message_prive', {
+                room: room,
+                from: username,
+                text: input.value
+            });
+            input.value = '';
+        }
+
+        document.getElementById('msg').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') envoyer();
+        });
+    </script>
+</body>
+</html>

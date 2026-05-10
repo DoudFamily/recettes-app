@@ -215,16 +215,59 @@ def edit(id):
     return render_template("edit.html", recipe=recipe, id=id)
 
 # ---------------- CHAT ----------------
+messages_store = {}  # stockage en mémoire des messages privés
+
+def get_room(user1, user2):
+    """Crée un nom de room unique entre 2 users (ordre alphabétique)"""
+    return "_".join(sorted([user1, user2]))
+
 @app.route('/chat')
 def chat():
     if 'username' not in session:
         return redirect('/login')
-    return render_template("chat.html", username=session['username'])
+    
+    with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
+        autorises = json.load(f)
+    
+    # Liste des utilisateurs disponibles (sauf soi-même), admin inclus
+    users = [u for u in autorises if u != session['username']]
+    if session['username'] != 'admin':
+        users.append('admin')
+    
+    return render_template("chat.html", username=session['username'], users=users)
 
-@socketio.on('message')
-def handle_message(msg):
-    send(msg, broadcast=True)
+@app.route('/chat/<destinataire>')
+def chat_prive(destinataire):
+    if 'username' not in session:
+        return redirect('/login')
+    
+    room = get_room(session['username'], destinataire)
+    historique = messages_store.get(room, [])
+    
+    return render_template(
+        "chat_prive.html",
+        username=session['username'],
+        destinataire=destinataire,
+        room=room,
+        historique=historique
+    )
 
+@socketio.on('message_prive')
+def handle_prive(data):
+    room = data['room']
+    msg = {
+        "from": data['from'],
+        "text": data['text']
+    }
+    if room not in messages_store:
+        messages_store[room] = []
+    messages_store[room].append(msg)
+    socketio.emit('message_prive', msg, room=room)
+
+@socketio.on('join')
+def on_join(data):
+    from flask_socketio import join_room
+    join_room(data['room'])
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
 def logout():

@@ -1,34 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
+    <meta charset="UTF-8">
     <title>Chat</title>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 </head>
 <body>
+    <h2>💬 Choisir un utilisateur</h2>
 
-<h1>Chat</h1>
+    {% if users %}
+        <ul>
+        {% for user in users %}
+            <li>
+                <a href="/chat/{{ user }}">💬 {{ user }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aucun autre utilisateur disponible.</p>
+    {% endif %}
 
-<input id="msg">
-<button onclick="send()">Envoyer</button>
-
-<ul id="messages"></ul>
-
-<script>
-var socket = io();
-
-function send() {
-    var m = document.getElementById("msg").value;
-    socket.send("{{ username }}: " + m);
-}
-
-socket.on('message', function(msg) {
-    var li = document.createElement("li");
-    li.innerText = msg;
-    document.getElementById("messages").appendChild(li);
-});
-</script>
-
-<a href="/">Retour</a>
-
+    <br>
+    <a href="/">← Retour</a>
 </body>
 </html>
