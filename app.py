@@ -7,7 +7,6 @@ import sqlite3
 
 load_dotenv()
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-print("ADMIN =", ADMIN_PASSWORD)
 
 app = Flask(__name__)
 app.secret_key = "secret123"
