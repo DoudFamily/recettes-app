@@ -7,31 +7,28 @@ import json
 import sqlite3
 
 load_dotenv()
-
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 print("ADMIN =", ADMIN_PASSWORD)
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 socketio = SocketIO(app)
-DB_FILE = "database.db"
 
+DB_FILE = "database.db"
 conn = sqlite3.connect(DB_FILE, check_same_thread=False)
 cursor = conn.cursor()
-# ---------------- TABLES ----------------
 
+# ---------------- TABLES ----------------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS autorises (
     username TEXT UNIQUE
 )
 """)
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS non_autorises (
     username TEXT UNIQUE
 )
 """)
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS recettes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,18 +42,27 @@ CREATE TABLE IF NOT EXISTS recettes (
     sous_categorie TEXT
 )
 """)
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS favoris (
     user TEXT,
     recipe_id INTEGER
 )
 """)
-
 conn.commit()
+
+
 @app.before_request
 def verifier_acces():
     """Déconnecte automatiquement un user si l'admin l'a révoqué"""
+    if 'username' in session and session.get('role') != 'admin':
+        cursor.execute(
+            "SELECT username FROM autorises WHERE username=?",
+            (session['username'],)
+        )
+        user = cursor.fetchone()
+        if not user:
+            session.clear()
+            return redirect('/login')
 
     if 'username' in session and session.get('role') != 'admin':
 
