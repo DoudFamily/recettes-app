@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os
 import json
+import sqlite3
 
 load_dotenv()
 
@@ -13,44 +14,91 @@ print("ADMIN =", ADMIN_PASSWORD)
 app = Flask(__name__)
 app.secret_key = "secret123"
 socketio = SocketIO(app)
+DB_FILE = "database.db"
+
+conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+cursor = conn.cursor()
+# ---------------- TABLES ----------------
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS autorises (
+    username TEXT UNIQUE
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS non_autorises (
+    username TEXT UNIQUE
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS recettes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    ingredients TEXT,
+    preparation TEXT,
+    cuisson TEXT,
+    astuce TEXT,
+    image TEXT,
+    categorie TEXT,
+    sous_categorie TEXT
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS favoris (
+    user TEXT,
+    recipe_id INTEGER
+)
+""")
+
+conn.commit()
 @app.before_request
 def verifier_acces():
     """Déconnecte automatiquement un user si l'admin l'a révoqué"""
+
     if 'username' in session and session.get('role') != 'admin':
-        with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
-            autorises = json.load(f)
-        if session['username'] not in autorises:
+
+        cursor.execute(
+            "SELECT username FROM autorises WHERE username=?",
+            (session['username'],)
+        )
+
+        user = cursor.fetchone()
+
+        if not user:
             session.clear()
             return redirect('/login')
-RECIPES_FILE = "recettes.json"
-AUTORISES_FILE = "autorises.json"
-NON_AUTORISES_FILE = "non_autorises.json"
-FAVORIS_FILE = "favoris.json"
+# RECIPES_FILE = "recettes.json"
+# AUTORISES_FILE = "autorises.json"
+# NON_AUTORISES_FILE = "non_autorises.json"
+# FAVORIS_FILE = "favoris.json"
 
-if not os.path.exists(FAVORIS_FILE):
-    with open(FAVORIS_FILE, "w") as f:
-        json.dump([], f)
+# if not os.path.exists(FAVORIS_FILE):
+#    with open(FAVORIS_FILE, "w") as f:
+#        json.dump([], f)
 
 # 🔧 Création fichiers si inexistants
-for file in [RECIPES_FILE, AUTORISES_FILE, NON_AUTORISES_FILE]:
-    if not os.path.exists(file):
-        with open(file, "w", encoding="utf-8") as f:
-            json.dump([], f)
+# for file in [RECIPES_FILE, AUTORISES_FILE, NON_AUTORISES_FILE]:
+#     if not os.path.exists(file):
+#         with open(file, "w", encoding="utf-8") as f:
+#            json.dump([], f)
 
 # Charger données
-with open(RECIPES_FILE, "r", encoding="utf-8") as f:
-    recipes = json.load(f)
+# with open(RECIPES_FILE, "r", encoding="utf-8") as f:
+#    recipes = json.load(f)
 
 # ---------------- LOGIN ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
 
-    with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
-        autorises = json.load(f)
+   cursor.execute("SELECT username FROM autorises")
+autorises = [row[0] for row in cursor.fetchall()]
 
-    with open(NON_AUTORISES_FILE, "r", encoding="utf-8") as f:
-        non_autorises = json.load(f)
+cursor.execute("SELECT username FROM non_autorises")
+non_autorises = [row[0] for row in cursor.fetchall()]
 
     if request.method == 'POST':
         username = request.form['username']
@@ -79,11 +127,11 @@ def login():
         # 🆕 NOUVEL UTILISATEUR
         else:
             if username not in non_autorises:
-                non_autorises.append(username)
-
-                with open(NON_AUTORISES_FILE, "w", encoding="utf-8") as f:
-                    json.dump(non_autorises, f, indent=4)
-
+               cursor.execute(
+    "INSERT OR IGNORE INTO non_autorises (username) VALUES (?)",
+    (username,)
+)
+conn.commit()
                 socketio.emit('new_user', username)
 
             error = "⏳ En attente de validation par admin"
@@ -94,29 +142,30 @@ def validate_user():
     username = request.form['username']
     action = request.form['action']
 
-    with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
-        autorises = json.load(f)
-
-    with open(NON_AUTORISES_FILE, "r", encoding="utf-8") as f:
-        non_autorises = json.load(f)
-
     if action == "autoriser":
-        if username not in autorises:
-            autorises.append(username)
-        if username in non_autorises:
-            non_autorises.remove(username)  # ← retire aussi des non autorisés
-        with open(AUTORISES_FILE, "w", encoding="utf-8") as f:
-            json.dump(autorises, f, indent=4)
-        with open(NON_AUTORISES_FILE, "w", encoding="utf-8") as f:
-            json.dump(non_autorises, f, indent=4)
 
-    else:  # refuser
-        if username not in non_autorises:
-            non_autorises.append(username)
-        with open(NON_AUTORISES_FILE, "w", encoding="utf-8") as f:
-            json.dump(non_autorises, f, indent=4)
+        cursor.execute(
+            "INSERT OR IGNORE INTO autorises (username) VALUES (?)",
+            (username,)
+        )
 
-    return redirect('/admin')  # ← reste sur l'admin, pas redirect('/')
+        cursor.execute(
+            "DELETE FROM non_autorises WHERE username=?",
+            (username,)
+        )
+
+        conn.commit()
+
+    else:
+
+        cursor.execute(
+            "INSERT OR IGNORE INTO non_autorises (username) VALUES (?)",
+            (username,)
+        )
+
+        conn.commit()
+
+    return redirect('/admin')
 # ---------------- ACCUEIL ----------------
 @app.route('/')
 def index():
