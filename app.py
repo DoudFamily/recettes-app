@@ -3,7 +3,6 @@ from flask_socketio import SocketIO, send
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os
-import json
 import sqlite3
 
 load_dotenv()
@@ -51,9 +50,31 @@ CREATE TABLE IF NOT EXISTS favoris (
 conn.commit()
 
 
+# ---------------- HELPERS ----------------
+def get_autorises():
+    cursor.execute("SELECT username FROM autorises")
+    return [row[0] for row in cursor.fetchall()]
+
+def get_non_autorises():
+    cursor.execute("SELECT username FROM non_autorises")
+    return [row[0] for row in cursor.fetchall()]
+
+def get_recipes():
+    cursor.execute("SELECT id, title, ingredients, preparation, cuisson, astuce, image, categorie, sous_categorie FROM recettes")
+    rows = cursor.fetchall()
+    return [
+        {
+            "id": r[0], "title": r[1], "ingredients": r[2],
+            "preparation": r[3], "cuisson": r[4], "astuce": r[5],
+            "image": r[6], "categorie": r[7], "sous_categorie": r[8]
+        }
+        for r in rows
+    ]
+
+
+# ---------------- AUTH GUARD ----------------
 @app.before_request
 def verifier_acces():
-    """Déconnecte automatiquement un user si l'admin l'a révoqué"""
     if 'username' in session and session.get('role') != 'admin':
         cursor.execute(
             "SELECT username FROM autorises WHERE username=?",
@@ -64,55 +85,19 @@ def verifier_acces():
             session.clear()
             return redirect('/login')
 
-    if 'username' in session and session.get('role') != 'admin':
-
-        cursor.execute(
-            "SELECT username FROM autorises WHERE username=?",
-            (session['username'],)
-        )
-
-        user = cursor.fetchone()
-
-        if not user:
-            session.clear()
-            return redirect('/login')
-# RECIPES_FILE = "recettes.json"
-# AUTORISES_FILE = "autorises.json"
-# NON_AUTORISES_FILE = "non_autorises.json"
-# FAVORIS_FILE = "favoris.json"
-
-# if not os.path.exists(FAVORIS_FILE):
-#    with open(FAVORIS_FILE, "w") as f:
-#        json.dump([], f)
-
-# 🔧 Création fichiers si inexistants
-# for file in [RECIPES_FILE, AUTORISES_FILE, NON_AUTORISES_FILE]:
-#     if not os.path.exists(file):
-#         with open(file, "w", encoding="utf-8") as f:
-#            json.dump([], f)
-
-# Charger données
-# with open(RECIPES_FILE, "r", encoding="utf-8") as f:
-#    recipes = json.load(f)
 
 # ---------------- LOGIN ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
-
-   cursor.execute("SELECT username FROM autorises")
-autorises = [row[0] for row in cursor.fetchall()]
-
-cursor.execute("SELECT username FROM non_autorises")
-non_autorises = [row[0] for row in cursor.fetchall()]
+    autorises = get_autorises()
+    non_autorises = get_non_autorises()
 
     if request.method == 'POST':
         username = request.form['username']
 
-        # 🔐 ADMIN AVEC MOT DE PASSE
         if username == "admin":
             password = request.form.get('password')
-
             if password == ADMIN_PASSWORD:
                 session['username'] = username
                 session['role'] = "admin"
@@ -120,58 +105,42 @@ non_autorises = [row[0] for row in cursor.fetchall()]
             else:
                 error = "Mot de passe admin incorrect"
 
-        # 👤 USER autorisé
         elif username in autorises:
             session['username'] = username
             session['role'] = "user"
             return redirect('/')
 
-        # ❌ USER refusé
         elif username in non_autorises:
-            error = "Accès refusé"
+            error = "Acces refuse"
 
-        # 🆕 NOUVEL UTILISATEUR
         else:
-            if username not in non_autorises:
-               cursor.execute(
-    "INSERT OR IGNORE INTO non_autorises (username) VALUES (?)",
-    (username,)
-)
-conn.commit()
-                socketio.emit('new_user', username)
+            cursor.execute(
+                "INSERT OR IGNORE INTO non_autorises (username) VALUES (?)",
+                (username,)
+            )
+            conn.commit()
+            socketio.emit('new_user', username)
+            error = "En attente de validation par admin"
 
-            error = "⏳ En attente de validation par admin"
+    return render_template("login.html", error=error)
 
-    return render_template("login.html", error=error)# ---------------- ACCEPTER / REFUSER ----------------
+
+# ---------------- ACCEPTER / REFUSER ----------------
 @app.route('/validate_user', methods=['POST'])
 def validate_user():
     username = request.form['username']
     action = request.form['action']
 
     if action == "autoriser":
-
-        cursor.execute(
-            "INSERT OR IGNORE INTO autorises (username) VALUES (?)",
-            (username,)
-        )
-
-        cursor.execute(
-            "DELETE FROM non_autorises WHERE username=?",
-            (username,)
-        )
-
-        conn.commit()
-
+        cursor.execute("INSERT OR IGNORE INTO autorises (username) VALUES (?)", (username,))
+        cursor.execute("DELETE FROM non_autorises WHERE username=?", (username,))
     else:
+        cursor.execute("INSERT OR IGNORE INTO non_autorises (username) VALUES (?)", (username,))
 
-        cursor.execute(
-            "INSERT OR IGNORE INTO non_autorises (username) VALUES (?)",
-            (username,)
-        )
-
-        conn.commit()
-
+    conn.commit()
     return redirect('/admin')
+
+
 # ---------------- ACCUEIL ----------------
 @app.route('/')
 def index():
@@ -179,19 +148,14 @@ def index():
     sub = request.args.get('sub')
     search = request.args.get('search')
 
-    filtered = recipes
+    filtered = get_recipes()
 
     if cat:
         filtered = [r for r in filtered if r.get("categorie") == cat]
-
     if sub:
         filtered = [r for r in filtered if r.get("sous_categorie") == sub]
-
     if search:
-        filtered = [
-            r for r in filtered
-            if search.lower() in r.get("title", "").lower()
-        ]
+        filtered = [r for r in filtered if search.lower() in r.get("title", "").lower()]
 
     return render_template(
         "index.html",
@@ -202,6 +166,8 @@ def index():
         sub=sub,
         search=search
     )
+
+
 # ---------------- AJOUT ----------------
 @app.route('/add', methods=['GET', 'POST'])
 def add():
@@ -210,49 +176,43 @@ def add():
 
     if request.method == 'POST':
         image_file = request.files['image']
-
         filename = ""
         if image_file and image_file.filename != "":
             filename = secure_filename(image_file.filename)
             image_path = os.path.join("static/images", filename)
             image_file.save(image_path)
 
-        recipe = {
-    "title": request.form['title'],
-    "ingredients": request.form['ingredients'],
-    "preparation": request.form['preparation'],
-    "cuisson": request.form['cuisson'],
-    "astuce": request.form['astuce'],
-    "image": filename,
-    "categorie": request.form['categorie'],
-    "sous_categorie": request.form['sous_categorie']
-}
-
-        recipes.append(recipe)
-
-        with open(RECIPES_FILE, "w", encoding="utf-8") as f:
-            json.dump(recipes, f, indent=4)
-
+        cursor.execute(
+            "INSERT INTO recettes (title, ingredients, preparation, cuisson, astuce, image, categorie, sous_categorie) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                request.form['title'],
+                request.form['ingredients'],
+                request.form['preparation'],
+                request.form['cuisson'],
+                request.form['astuce'],
+                filename,
+                request.form['categorie'],
+                request.form['sous_categorie']
+            )
+        )
+        conn.commit()
         return redirect('/')
 
     return render_template("add.html")
+
 
 # ---------------- DELETE ----------------
 @app.route('/delete/<int:id>')
 def delete(id):
     if 'username' not in session:
         return redirect('/login')
-
     if session.get("role") != "admin":
-        return "Accès refusé"
+        return "Acces refuse"
 
-    if id < len(recipes):
-        recipes.pop(id)
-
-        with open(RECIPES_FILE, "w", encoding="utf-8") as f:
-            json.dump(recipes, f, indent=4)
-
+    cursor.execute("DELETE FROM recettes WHERE id=?", (id,))
+    conn.commit()
     return redirect('/')
+
 
 # ---------------- EDIT ----------------
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
@@ -260,55 +220,61 @@ def edit(id):
     if 'username' not in session:
         return redirect('/login')
 
-    if id >= len(recipes):
+    cursor.execute("SELECT * FROM recettes WHERE id=?", (id,))
+    row = cursor.fetchone()
+    if not row:
         return redirect('/')
 
-    recipe = recipes[id]
+    recipe = {
+        "id": row[0], "title": row[1], "ingredients": row[2],
+        "preparation": row[3], "cuisson": row[4], "astuce": row[5],
+        "image": row[6], "categorie": row[7], "sous_categorie": row[8]
+    }
 
     if request.method == 'POST':
-        recipe['title'] = request.form['title']
-        recipe['ingredients'] = request.form['ingredients']
-        recipe['preparation'] = request.form['preparation']
-        recipe['cuisson'] = request.form['cuisson']
-        recipe['astuce'] = request.form['astuce']
-
-        with open(RECIPES_FILE, "w", encoding="utf-8") as f:
-            json.dump(recipes, f, indent=4)
-
+        cursor.execute(
+            "UPDATE recettes SET title=?, ingredients=?, preparation=?, cuisson=?, astuce=? WHERE id=?",
+            (
+                request.form['title'],
+                request.form['ingredients'],
+                request.form['preparation'],
+                request.form['cuisson'],
+                request.form['astuce'],
+                id
+            )
+        )
+        conn.commit()
         return redirect('/')
 
     return render_template("edit.html", recipe=recipe, id=id)
 
+
 # ---------------- CHAT ----------------
-messages_store = {}  # stockage en mémoire des messages privés
+messages_store = {}
 
 def get_room(user1, user2):
-    """Crée un nom de room unique entre 2 users (ordre alphabétique)"""
     return "_".join(sorted([user1, user2]))
 
 @app.route('/chat')
 def chat():
     if 'username' not in session:
         return redirect('/login')
-    
-    with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
-        autorises = json.load(f)
-    
-    # Liste des utilisateurs disponibles (sauf soi-même), admin inclus
+
+    autorises = get_autorises()
     users = [u for u in autorises if u != session['username']]
     if session['username'] != 'admin':
         users.append('admin')
-    
+
     return render_template("chat.html", username=session['username'], users=users)
 
 @app.route('/chat/<destinataire>')
 def chat_prive(destinataire):
     if 'username' not in session:
         return redirect('/login')
-    
+
     room = get_room(session['username'], destinataire)
     historique = messages_store.get(room, [])
-    
+
     return render_template(
         "chat_prive.html",
         username=session['username'],
@@ -320,10 +286,7 @@ def chat_prive(destinataire):
 @socketio.on('message_prive')
 def handle_prive(data):
     room = data['room']
-    msg = {
-        "from": data['from'],
-        "text": data['text']
-    }
+    msg = {"from": data['from'], "text": data['text']}
     if room not in messages_store:
         messages_store[room] = []
     messages_store[room].append(msg)
@@ -333,6 +296,8 @@ def handle_prive(data):
 def on_join(data):
     from flask_socketio import join_room
     join_room(data['room'])
+
+
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
 def logout():
@@ -345,103 +310,69 @@ def logout():
 def admin():
     if 'username' not in session:
         return redirect('/login')
-
     if session.get("role") != "admin":
-        return "Accès refusé"
+        return "Acces refuse"
 
-    with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
-        autorises = json.load(f)
-
-    with open(NON_AUTORISES_FILE, "r", encoding="utf-8") as f:
-        non_autorises = json.load(f)
+    autorises = get_autorises()
+    non_autorises = get_non_autorises()
 
     return render_template("admin.html", autorises=autorises, non_autorises=non_autorises)
+
+
 # ---------------- ADMIN ACTIONS ----------------
 @app.route('/admin/autoriser/<username>')
 def admin_autoriser(username):
     if session.get("role") != "admin":
-        return "Accès refusé"
+        return "Acces refuse"
 
-    with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
-        autorises = json.load(f)
-
-    if username not in autorises:
-        autorises.append(username)
-
-    with open(AUTORISES_FILE, "w", encoding="utf-8") as f:
-        json.dump(autorises, f, indent=4)
-
+    cursor.execute("INSERT OR IGNORE INTO autorises (username) VALUES (?)", (username,))
+    cursor.execute("DELETE FROM non_autorises WHERE username=?", (username,))
+    conn.commit()
     return redirect('/admin')
 
 
 @app.route('/admin/refuser/<username>')
 def admin_refuser(username):
     if session.get("role") != "admin":
-        return "Accès refusé"
+        return "Acces refuse"
 
-    with open(NON_AUTORISES_FILE, "r", encoding="utf-8") as f:
-        non_autorises = json.load(f)
-
-    if username not in non_autorises:
-        non_autorises.append(username)
-
-    with open(NON_AUTORISES_FILE, "w", encoding="utf-8") as f:
-        json.dump(non_autorises, f, indent=4)
-
+    cursor.execute("INSERT OR IGNORE INTO non_autorises (username) VALUES (?)", (username,))
+    cursor.execute("DELETE FROM autorises WHERE username=?", (username,))
+    conn.commit()
     return redirect('/admin')
+
 
 @app.route('/admin/delete_user/<username>')
 def delete_user(username):
     if session.get("role") != "admin":
-        return "Accès refusé"
+        return "Acces refuse"
 
-    with open(AUTORISES_FILE, "r", encoding="utf-8") as f:
-        autorises = json.load(f)
-
-    with open(NON_AUTORISES_FILE, "r", encoding="utf-8") as f:
-        non_autorises = json.load(f)
-
-    if username in autorises:
-        autorises.remove(username)
-
-    if username in non_autorises:
-        non_autorises.remove(username)
-
-    with open(AUTORISES_FILE, "w", encoding="utf-8") as f:
-        json.dump(autorises, f, indent=4)
-
-    with open(NON_AUTORISES_FILE, "w", encoding="utf-8") as f:
-        json.dump(non_autorises, f, indent=4)
-
+    cursor.execute("DELETE FROM autorises WHERE username=?", (username,))
+    cursor.execute("DELETE FROM non_autorises WHERE username=?", (username,))
+    conn.commit()
     return redirect('/admin')
 
-#--------------------FAVORIS------------------------------
+
+# ---------------- FAVORIS ----------------
 @app.route('/favori/<int:id>')
 def toggle_favori(id):
     if 'username' not in session:
         return redirect('/login')
 
-    # charger favoris
-    with open(FAVORIS_FILE, "r", encoding="utf-8") as f:
-        favoris = json.load(f)
-
     user = session['username']
-    entry = {"user": user, "id": id}
+    cursor.execute("SELECT * FROM favoris WHERE user=? AND recipe_id=?", (user, id))
+    existing = cursor.fetchone()
 
-    # toggle
-    if entry in favoris:
-        favoris.remove(entry)
+    if existing:
+        cursor.execute("DELETE FROM favoris WHERE user=? AND recipe_id=?", (user, id))
     else:
-        favoris.append(entry)
+        cursor.execute("INSERT INTO favoris (user, recipe_id) VALUES (?, ?)", (user, id))
 
-    # sauvegarde
-    with open(FAVORIS_FILE, "w", encoding="utf-8") as f:
-        json.dump(favoris, f, indent=4)
-
+    conn.commit()
     return redirect('/')
 
-#--------------------RUN------------------------------
 
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
