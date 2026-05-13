@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, send_file
 from flask_socketio import SocketIO, send
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -369,7 +369,9 @@ def toggle_favori(id):
 
     conn.commit()
     return redirect('/')
-
+@app.route('/download-db')
+def download_db():
+    return send_file("database.db", as_attachment=True)
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
