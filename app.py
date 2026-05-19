@@ -143,30 +143,54 @@ def validate_user():
 # ---------------- ACCUEIL ----------------
 @app.route('/')
 def index():
+
     cat = request.args.get('cat')
     sub = request.args.get('sub')
     search = request.args.get('search')
 
-    filtered = get_recipes()
+    query = "SELECT * FROM recettes WHERE 1=1"
+    params = []
 
     if cat:
-        filtered = [r for r in filtered if r.get("categorie") == cat]
+        query += " AND categorie=?"
+        params.append(cat)
+
     if sub:
-        filtered = [r for r in filtered if r.get("sous_categorie") == sub]
+        query += " AND sous_categorie=?"
+        params.append(sub)
+
     if search:
-        filtered = [r for r in filtered if search.lower() in r.get("title", "").lower()]
+        query += " AND title LIKE ?"
+        params.append(f"%{search}%")
+
+    cursor.execute(query, params)
+
+    recettes_db = cursor.fetchall()
+
+    recipes = []
+
+    for r in recettes_db:
+        recipes.append({
+            "id": r[0],
+            "title": r[1],
+            "ingredients": r[2],
+            "preparation": r[3],
+            "cuisson": r[4],
+            "astuce": r[5],
+            "image": r[6],
+            "categorie": r[7],
+            "sous_categorie": r[8]
+        })
 
     return render_template(
         "index.html",
-        recipes=filtered,
+        recipes=recipes,
         username=session.get("username"),
         role=session.get("role"),
         cat=cat,
         sub=sub,
         search=search
     )
-
-
 # ---------------- AJOUT ----------------
 @app.route('/add', methods=['GET', 'POST'])
 def add():
