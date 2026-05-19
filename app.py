@@ -396,6 +396,7 @@ def toggle_favori(id):
 @app.route('/download-db')
 def download_db():
     return send_file("database.db", as_attachment=True)
+# ---------------- IMPORT JSON ----------------
 @app.route('/import-json')
 def import_json():
 
@@ -429,8 +430,12 @@ def import_json():
 
     conn.commit()
 
-    return "Import terminé"
-# ---------------- RUN ----------------
+    return "Import termine"
+
+
+@app.route('/download-db')
+def download_db():
+    return send_file("database.db", as_attachment=True)# ---------------- RUN ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
