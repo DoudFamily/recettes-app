@@ -396,7 +396,40 @@ def toggle_favori(id):
 @app.route('/download-db')
 def download_db():
     return send_file("database.db", as_attachment=True)
+@app.route('/import-json')
+def import_json():
 
+    with open("recettes.json", "r", encoding="utf-8") as f:
+        recettes = json.load(f)
+
+    for r in recettes:
+
+        cursor.execute("""
+        INSERT INTO recettes (
+            title,
+            ingredients,
+            preparation,
+            cuisson,
+            astuce,
+            image,
+            categorie,
+            sous_categorie
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            r.get("title"),
+            r.get("ingredients"),
+            r.get("preparation"),
+            r.get("cuisson"),
+            r.get("astuce"),
+            r.get("image"),
+            r.get("categorie"),
+            r.get("sous_categorie")
+        ))
+
+    conn.commit()
+
+    return "Import terminé"
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
