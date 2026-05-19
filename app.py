@@ -442,11 +442,6 @@ def import_json():
     return "Import termine"
 
 
-@app.route('/download-db')
-def download_db():
-    return send_file("database.db", as_attachment=True)
-
-
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
