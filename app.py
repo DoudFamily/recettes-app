@@ -405,6 +405,15 @@ def import_json():
 
     for r in recettes:
 
+        title = r.get("title", "")
+        ingredients = r.get("ingredients", "")
+        preparation = r.get("preparation", "")
+        cuisson = r.get("cuisson", "")
+        astuce = r.get("astuce", "")
+        image = r.get("image", "")
+        categorie = r.get("categorie", "")
+        sous_categorie = r.get("sous_categorie", "")
+
         cursor.execute("""
         INSERT INTO recettes (
             title,
@@ -418,24 +427,21 @@ def import_json():
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            r.get("title"),
-            r.get("ingredients"),
-            r.get("preparation"),
-            r.get("cuisson"),
-            r.get("astuce"),
-            r.get("image"),
-            r.get("categorie"),
-            r.get("sous_categorie")
+            title,
+            ingredients,
+            preparation,
+            cuisson,
+            astuce,
+            image,
+            categorie,
+            sous_categorie
         ))
 
     conn.commit()
 
     return "Import termine"
 
-
-@app.route('/download-db')
-def download_db():
-    return send_file("database.db", as_attachment=True)# ---------------- RUN ----------------
+ ---------------- RUN ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
