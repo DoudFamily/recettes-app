@@ -400,6 +400,9 @@ def download_db():
 @app.route('/import-json')
 def import_json():
 
+    if not os.path.exists("recettes.json"):
+        return "Fichier recettes.json introuvable"
+
     with open("recettes.json", "r", encoding="utf-8") as f:
         recettes = json.load(f)
 
@@ -439,8 +442,7 @@ def import_json():
 
     conn.commit()
 
-    return "Import termine"
-
+    return f"{len(recettes)} recettes importees"
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
