@@ -75,52 +75,79 @@ def get_recipes():
 # ---------------- AUTH GUARD ----------------
 @app.before_request
 def verifier_acces():
+
     if 'username' in session and session.get('role') != 'admin':
+
         cursor.execute(
             "SELECT username FROM autorises WHERE username=?",
             (session['username'],)
         )
+
         user = cursor.fetchone()
+
         if not user:
             session.clear()
             return redirect('/login')
 
-
 # ---------------- LOGIN ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
     error = None
-    autorises = get_autorises()
-    non_autorises = get_non_autorises()
 
     if request.method == 'POST':
+
         username = request.form['username']
 
+        # ADMIN
         if username == "admin":
+
             password = request.form.get('password')
+
             if password == ADMIN_PASSWORD:
                 session['username'] = username
                 session['role'] = "admin"
                 return redirect('/')
+
             else:
                 error = "Mot de passe admin incorrect"
 
-        elif username in autorises:
-            session['username'] = username
-            session['role'] = "user"
-            return redirect('/')
-
-        elif username in non_autorises:
-            error = "Acces refuse"
-
         else:
+
             cursor.execute(
-                "INSERT OR IGNORE INTO non_autorises (username) VALUES (?)",
+                "SELECT username FROM autorises WHERE username=?",
                 (username,)
             )
-            conn.commit()
-            socketio.emit('new_user', username)
-            error = "En attente de validation par admin"
+
+            autorise = cursor.fetchone()
+
+            cursor.execute(
+                "SELECT username FROM non_autorises WHERE username=?",
+                (username,)
+            )
+
+            refuse = cursor.fetchone()
+
+            if autorise:
+                session['username'] = username
+                session['role'] = "user"
+                return redirect('/')
+
+            elif refuse:
+                error = "Acces refuse"
+
+            else:
+
+                cursor.execute(
+                    "INSERT OR IGNORE INTO non_autorises (username) VALUES (?)",
+                    (username,)
+                )
+
+                conn.commit()
+
+                socketio.emit('new_user', username)
+
+                error = "En attente de validation par admin"
 
     return render_template("login.html", error=error)
 
