@@ -397,58 +397,6 @@ def toggle_favori(id):
 @app.route('/download-db')
 def download_db():
     return send_file("database.db", as_attachment=True)
-# ---------------- IMPORT JSON ----------------
-@app.route('/import-json')
-def import_json():
-
-    try:
-
-        if not os.path.exists("recettes.json"):
-            return "Fichier recettes.json introuvable"
-
-        with open("recettes.json", "r", encoding="utf-8") as f:
-            recettes = json.load(f)
-
-        for r in recettes:
-
-            title = r.get("title", "")
-            ingredients = r.get("ingredients", "")
-            preparation = r.get("preparation", "")
-            cuisson = r.get("cuisson", "")
-            astuce = r.get("astuce", "")
-            image = r.get("image", "")
-            categorie = r.get("categorie", "")
-            sous_categorie = r.get("sous_categorie", "")
-
-            cursor.execute("""
-            INSERT INTO recettes (
-                title,
-                ingredients,
-                preparation,
-                cuisson,
-                astuce,
-                image,
-                categorie,
-                sous_categorie
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                title,
-                ingredients,
-                preparation,
-                cuisson,
-                astuce,
-                image,
-                categorie,
-                sous_categorie
-            ))
-
-        conn.commit()
-
-        return f"{len(recettes)} recettes importees"
-
-    except Exception as e:
-        return str(e)
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
