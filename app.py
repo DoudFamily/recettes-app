@@ -400,49 +400,54 @@ def download_db():
 @app.route('/import-json')
 def import_json():
 
-    if not os.path.exists("recettes.json"):
-        return "Fichier recettes.json introuvable"
+    try:
 
-    with open("recettes.json", "r", encoding="utf-8") as f:
-        recettes = json.load(f)
+        if not os.path.exists("recettes.json"):
+            return "Fichier recettes.json introuvable"
 
-    for r in recettes:
+        with open("recettes.json", "r", encoding="utf-8") as f:
+            recettes = json.load(f)
 
-        title = r.get("title", "")
-        ingredients = r.get("ingredients", "")
-        preparation = r.get("preparation", "")
-        cuisson = r.get("cuisson", "")
-        astuce = r.get("astuce", "")
-        image = r.get("image", "")
-        categorie = r.get("categorie", "")
-        sous_categorie = r.get("sous_categorie", "")
+        for r in recettes:
 
-        cursor.execute("""
-        INSERT INTO recettes (
-            title,
-            ingredients,
-            preparation,
-            cuisson,
-            astuce,
-            image,
-            categorie,
-            sous_categorie
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            title,
-            ingredients,
-            preparation,
-            cuisson,
-            astuce,
-            image,
-            categorie,
-            sous_categorie
-        ))
+            title = r.get("title", "")
+            ingredients = r.get("ingredients", "")
+            preparation = r.get("preparation", "")
+            cuisson = r.get("cuisson", "")
+            astuce = r.get("astuce", "")
+            image = r.get("image", "")
+            categorie = r.get("categorie", "")
+            sous_categorie = r.get("sous_categorie", "")
 
-    conn.commit()
+            cursor.execute("""
+            INSERT INTO recettes (
+                title,
+                ingredients,
+                preparation,
+                cuisson,
+                astuce,
+                image,
+                categorie,
+                sous_categorie
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                title,
+                ingredients,
+                preparation,
+                cuisson,
+                astuce,
+                image,
+                categorie,
+                sous_categorie
+            ))
 
-    return f"{len(recettes)} recettes importees"
+        conn.commit()
+
+        return f"{len(recettes)} recettes importees"
+
+    except Exception as e:
+        return str(e)
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
