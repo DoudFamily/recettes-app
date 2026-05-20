@@ -425,17 +425,6 @@ def toggle_favori(id):
 def download_db():
     return send_file("database.db", as_attachment=True)
 
-# ---------------- RUN ----------------
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    socketio.run(
-    app,
-    host="0.0.0.0",
-    port=port,
-    debug=True,
-    allow_unsafe_werkzeug=True
-)
-
 @app.route('/debug-users')
 def debug_users():
 
@@ -449,3 +438,16 @@ def debug_users():
         "autorises": autorises,
         "non_autorises": non_autorises
     }
+
+
+# ---------------- RUN ----------------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(
+    app,
+    host="0.0.0.0",
+    port=port,
+    debug=True,
+    allow_unsafe_werkzeug=True
+)
+
