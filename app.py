@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.secret_key = "secret123"
 socketio = SocketIO(app)
 
-DB_FILE = "database.db"
+DB_FILE = os.path.join(os.path.dirname(__file__), "database.db")
 conn = sqlite3.connect(DB_FILE, check_same_thread=False)
 cursor = conn.cursor()
 
