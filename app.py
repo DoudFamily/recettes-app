@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, send_file
+from flask import Flask, render_template, request, redirect, session, send_file, g
 from flask_socketio import SocketIO, send
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -18,17 +18,17 @@ conn = sqlite3.connect(DB_FILE, check_same_thread=False)
 cursor = conn.cursor()
 
 # ---------------- TABLES ----------------
-cursor.execute("""
+get_db().execute(execute("""
 CREATE TABLE IF NOT EXISTS autorises (
     username TEXT UNIQUE
 )
 """)
-cursor.execute("""
+get_db().execute(("""
 CREATE TABLE IF NOT EXISTS non_autorises (
     username TEXT UNIQUE
 )
 """)
-cursor.execute("""
+get_db().execute(.execute("""
 CREATE TABLE IF NOT EXISTS recettes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT,
@@ -41,26 +41,26 @@ CREATE TABLE IF NOT EXISTS recettes (
     sous_categorie TEXT
 )
 """)
-cursor.execute("""
+get_db().execute(.execute("""
 CREATE TABLE IF NOT EXISTS favoris (
     user TEXT,
     recipe_id INTEGER
 )
 """)
-conn.commit()
+get_db().commit()
 
 
 # ---------------- HELPERS ----------------
 def get_autorises():
-    cursor.execute("SELECT username FROM autorises")
+    get_db().execute(.execute("SELECT username FROM autorises")
     return [row[0] for row in cursor.fetchall()]
 
 def get_non_autorises():
-    cursor.execute("SELECT username FROM non_autorises")
+   get_db().execute(.execute("SELECT username FROM non_autorises")
     return [row[0] for row in cursor.fetchall()]
 
 def get_recipes():
-    cursor.execute("SELECT id, title, ingredients, preparation, cuisson, astuce, image, categorie, sous_categorie FROM recettes")
+    get_db().execute(.execute("SELECT id, title, ingredients, preparation, cuisson, astuce, image, categorie, sous_categorie FROM recettes")
     rows = cursor.fetchall()
     return [
         {
@@ -78,7 +78,7 @@ def verifier_acces():
 
     if 'username' in session and session.get('role') != 'admin':
 
-        cursor.execute(
+        get_db().execute(
             "SELECT username FROM autorises WHERE username=?",
             (session['username'],)
         )
@@ -114,14 +114,14 @@ def login():
 
         else:
 
-            cursor.execute(
+            get_db().execute(
                 "SELECT username FROM autorises WHERE username=?",
                 (username,)
             )
 
             autorise = cursor.fetchone()
 
-            cursor.execute(
+           get_db().execute(
                 "SELECT username FROM non_autorises WHERE username=?",
                 (username,)
             )
@@ -138,12 +138,12 @@ def login():
 
             else:
 
-                cursor.execute(
+                get_db().execute(
                     "INSERT OR IGNORE INTO non_autorises (username) VALUES (?)",
                     (username,)
                 )
 
-                conn.commit()
+                get_db().commit()
 
                 socketio.emit('new_user', username)
 
@@ -159,12 +159,12 @@ def validate_user():
     action = request.form['action']
 
     if action == "autoriser":
-        cursor.execute("INSERT OR IGNORE INTO autorises (username) VALUES (?)", (username,))
-        cursor.execute("DELETE FROM non_autorises WHERE username=?", (username,))
+        get_db().execute("INSERT OR IGNORE INTO autorises (username) VALUES (?)", (username,))
+        get_db()r.execute("DELETE FROM non_autorises WHERE username=?", (username,))
     else:
-        cursor.execute("INSERT OR IGNORE INTO non_autorises (username) VALUES (?)", (username,))
+        get_db().execute("INSERT OR IGNORE INTO non_autorises (username) VALUES (?)", (username,))
 
-    conn.commit()
+    get_db().commit()
     return redirect('/admin')
 
 
@@ -191,7 +191,7 @@ def index():
         query += " AND title LIKE ?"
         params.append(f"%{search}%")
 
-    cursor.execute(query, params)
+    get_db().execute(query, params)
 
     recettes_db = cursor.fetchall()
 
@@ -233,7 +233,7 @@ def add():
             image_path = os.path.join("static/images", filename)
             image_file.save(image_path)
 
-        cursor.execute(
+        get_db().execute(
             "INSERT INTO recettes (title, ingredients, preparation, cuisson, astuce, image, categorie, sous_categorie) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 request.form['title'],
@@ -246,7 +246,7 @@ def add():
                 request.form['sous_categorie']
             )
         )
-        conn.commit()
+        get_db().commit()
         return redirect('/')
 
     return render_template("add.html")
@@ -260,8 +260,8 @@ def delete(id):
     if session.get("role") != "admin":
         return "Acces refuse"
 
-    cursor.execute("DELETE FROM recettes WHERE id=?", (id,))
-    conn.commit()
+    get_db().execute("DELETE FROM recettes WHERE id=?", (id,))
+    get_db().commit()
     return redirect('/')
 
 
@@ -271,7 +271,7 @@ def edit(id):
     if 'username' not in session:
         return redirect('/login')
 
-    cursor.execute("SELECT * FROM recettes WHERE id=?", (id,))
+    get_db().execute("SELECT * FROM recettes WHERE id=?", (id,))
     row = cursor.fetchone()
     if not row:
         return redirect('/')
@@ -283,7 +283,7 @@ def edit(id):
     }
 
     if request.method == 'POST':
-        cursor.execute(
+        get_db().execute(
             "UPDATE recettes SET title=?, ingredients=?, preparation=?, cuisson=?, astuce=? WHERE id=?",
             (
                 request.form['title'],
@@ -294,7 +294,7 @@ def edit(id):
                 id
             )
         )
-        conn.commit()
+        get_db().commit()
         return redirect('/')
 
     return render_template("edit.html", recipe=recipe, id=id)
@@ -376,9 +376,9 @@ def admin_autoriser(username):
     if session.get("role") != "admin":
         return "Acces refuse"
 
-    cursor.execute("INSERT OR IGNORE INTO autorises (username) VALUES (?)", (username,))
-    cursor.execute("DELETE FROM non_autorises WHERE username=?", (username,))
-    conn.commit()
+    get_db().execute("INSERT OR IGNORE INTO autorises (username) VALUES (?)", (username,))
+    get_db().execute("DELETE FROM non_autorises WHERE username=?", (username,))
+    get_db().commit()
     return redirect('/admin')
 
 
@@ -387,9 +387,9 @@ def admin_refuser(username):
     if session.get("role") != "admin":
         return "Acces refuse"
 
-    cursor.execute("INSERT OR IGNORE INTO non_autorises (username) VALUES (?)", (username,))
-    cursor.execute("DELETE FROM autorises WHERE username=?", (username,))
-    conn.commit()
+   get_db().execute("INSERT OR IGNORE INTO non_autorises (username) VALUES (?)", (username,))
+    get_db().execute("DELETE FROM autorises WHERE username=?", (username,))
+    get_db().commit()
     return redirect('/admin')
 
 
@@ -398,9 +398,9 @@ def delete_user(username):
     if session.get("role") != "admin":
         return "Acces refuse"
 
-    cursor.execute("DELETE FROM autorises WHERE username=?", (username,))
-    cursor.execute("DELETE FROM non_autorises WHERE username=?", (username,))
-    conn.commit()
+    get_db().execute("DELETE FROM autorises WHERE username=?", (username,))
+    get_db().execute("DELETE FROM non_autorises WHERE username=?", (username,))
+    get_db().commit()
     return redirect('/admin')
 
 
@@ -411,15 +411,15 @@ def toggle_favori(id):
         return redirect('/login')
 
     user = session['username']
-    cursor.execute("SELECT * FROM favoris WHERE user=? AND recipe_id=?", (user, id))
+    get_db().execute("SELECT * FROM favoris WHERE user=? AND recipe_id=?", (user, id))
     existing = cursor.fetchone()
 
     if existing:
-        cursor.execute("DELETE FROM favoris WHERE user=? AND recipe_id=?", (user, id))
+        get_db().execute("DELETE FROM favoris WHERE user=? AND recipe_id=?", (user, id))
     else:
-        cursor.execute("INSERT INTO favoris (user, recipe_id) VALUES (?, ?)", (user, id))
+        get_db().execute("INSERT INTO favoris (user, recipe_id) VALUES (?, ?)", (user, id))
 
-    conn.commit()
+    get_db().commit()
     return redirect('/')
 @app.route('/download-db')
 def download_db():
@@ -428,10 +428,10 @@ def download_db():
 @app.route('/debug-users')
 def debug_users():
 
-    cursor.execute("SELECT * FROM autorises")
+    get_db().execute("SELECT * FROM autorises")
     autorises = cursor.fetchall()
 
-    cursor.execute("SELECT * FROM non_autorises")
+    get_db().execute("SELECT * FROM non_autorises")
     non_autorises = cursor.fetchall()
 
     return {
