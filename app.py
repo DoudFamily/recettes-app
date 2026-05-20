@@ -435,3 +435,17 @@ if __name__ == "__main__":
     debug=True,
     allow_unsafe_werkzeug=True
 )
+
+@app.route('/debug-users')
+def debug_users():
+
+    cursor.execute("SELECT * FROM autorises")
+    autorises = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM non_autorises")
+    non_autorises = cursor.fetchall()
+
+    return {
+        "autorises": autorises,
+        "non_autorises": non_autorises
+    }
