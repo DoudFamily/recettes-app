@@ -1,3 +1,4 @@
+<h1 style="color:red">TEST ALLERGENES</h1>
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,7 +29,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        input, textarea {
+        input, textarea, select {
             width: 100%;
             padding: 10px;
             margin-top: 10px;
@@ -80,11 +81,11 @@
 <body>
 
 <div class="header">
-    ➕ Ajouter une recette
+    <h1 style="color:red">TEST MODIFICATION</h1>
 </div>
 
 <div class="container">
-
+<h1 style="color:red;">TEST ALLERGENES</h1>
 <form method="POST" enctype="multipart/form-data">
 
     <label>🍽 Titre</label>
@@ -97,6 +98,11 @@
         <option>Plat</option>
         <option>Dessert</option>
     </select>
+<label>Allergènes :</label>
+
+<input type="text"
+       name="allergenes"
+       placeholder="gluten,lait,oeuf">
 
     <label>📁 Sous-catégorie</label>
     <select name="sous_categorie">

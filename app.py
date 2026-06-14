@@ -15,6 +15,7 @@ socketio = SocketIO(app)
 
 DB_FILE = os.path.join(os.path.dirname(__file__), "database.db")
 
+print("DATABASE UTILISEE :", DB_FILE)
 
 def get_db():
     if 'db' not in g:
@@ -58,6 +59,7 @@ with app.app_context():
         astuce TEXT,
         image TEXT,
         categorie TEXT,
+        allergenes TEXT,
         sous_categorie TEXT
     )
     """)
@@ -258,15 +260,31 @@ def add():
         return redirect('/login')
 
     if request.method == 'POST':
+
         image_file = request.files['image']
         filename = ""
+
         if image_file and image_file.filename != "":
             filename = secure_filename(image_file.filename)
             image_path = os.path.join("static/images", filename)
             image_file.save(image_path)
 
         get_db().execute(
-            "INSERT INTO recettes (title, ingredients, preparation, cuisson, astuce, image, categorie, sous_categorie) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            """
+            INSERT INTO recettes
+            (
+                title,
+                ingredients,
+                preparation,
+                cuisson,
+                astuce,
+                image,
+                categorie,
+                allergenes,
+                sous_categorie
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
             (
                 request.form['title'],
                 request.form['ingredients'],
@@ -275,10 +293,13 @@ def add():
                 request.form['astuce'],
                 filename,
                 request.form['categorie'],
+                request.form['allergenes'],
                 request.form['sous_categorie']
             )
         )
+
         get_db().commit()
+
         return redirect('/')
 
     return render_template("add.html")
