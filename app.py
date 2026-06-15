@@ -31,7 +31,22 @@ def close_db(error):
     if db is not None:
         db.close()
 
+@app.route("/debug-users")
+def debug_users():
+    db = get_db()
 
+    autorises = db.execute(
+        "SELECT username FROM autorises"
+    ).fetchall()
+
+    non_autorises = db.execute(
+        "SELECT username FROM non_autorises"
+    ).fetchall()
+
+    return {
+        "autorises": [dict(x) for x in autorises],
+        "non_autorises": [dict(x) for x in non_autorises]
+    }
 # ---------------- TABLES ----------------
 with app.app_context():
 
