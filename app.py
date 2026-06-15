@@ -498,21 +498,6 @@ def toggle_favori(id):
 def download_db():
     return send_file("database.db", as_attachment=True)
 
-@app.route('/debug-users')
-def debug_users():
-
-    autorises = get_db().execute(
-        "SELECT * FROM autorises"
-    ).fetchall()
-
-    non_autorises = get_db().execute(
-        "SELECT * FROM non_autorises"
-    ).fetchall()
-
-    return {
-        "autorises": [dict(x) for x in autorises],
-        "non_autorises": [dict(x) for x in non_autorises]
-    }
 
 
 # ---------------- RUN ----------------
